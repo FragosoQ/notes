@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#e6e2d8">
+<title>Ma · Notas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Shippori+Mincho+B1:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ─────────  MA 間 — design tokens  ─────────
+   Washi (papel), sumi (tinta), shu (vermelhão do hanko) e névoa nórdica.
+   O vermelho aparece com parcimónia: o selo, o marcador ativo e a ação principal. */
+:root{
+  --stone:#e6e2d8; --stone2:#efece4; --paper:#fcfaf5; --side:#f5f2ea;
+  --ink:#1c1b19; --ink2:#4d4a43; --mute:#8d887c;
+  --hair:rgba(28,27,25,.12); --hair2:rgba(28,27,25,.07);
+  --red:#c8442f; --pine:#4f6f52; --mist:#dfe6e4;
+  --serif:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho","Iowan Old Style",Georgia,serif;
+  --sans:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --noise:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .1 0 0 0 0 .1 0 0 0 0 .1 0 0 0 .055 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --ease:cubic-bezier(.2,.7,.2,1);
+  --h1:rgba(28,27,25,.045); --h2:rgba(28,27,25,.07); --glass:rgba(252,250,245,.78); --field:rgba(255,255,255,.55);
+  --line1:rgba(28,27,25,.085); --line2:rgba(28,27,25,.07);
+}
+/* Sumi à noite: papel carvão, tinta clara */
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --stone:#141413; --stone2:#1f1e1b; --paper:#242321; --side:#1a1918;
+  --ink:#ece8de; --ink2:#b9b4a8; --mute:#7f7a6f;
+  --hair:rgba(236,232,222,.14); --hair2:rgba(236,232,222,.08);
+  --red:#e0583f; --h1:rgba(236,232,222,.06); --h2:rgba(236,232,222,.1);
+  --glass:rgba(36,35,33,.78); --field:rgba(255,255,255,.04);
+  --line1:rgba(236,232,222,.08); --line2:rgba(236,232,222,.06);
+  --noise:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .9 0 0 0 0 .9 0 0 0 0 .85 0 0 0 .04 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;font-family:var(--sans);font-size:14px;color:var(--ink);background:var(--stone);overscroll-behavior:none;-webkit-font-smoothing:antialiased}
+button,select,input,textarea{font:inherit;color:inherit}
+button{background:none;border:1px solid var(--hair);border-radius:12px;padding:8px 14px;min-height:40px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:background .18s var(--ease),color .18s var(--ease),border-color .18s}
+button:hover{background:var(--h1)}
+button:active{transform:scale(.98)}
+button:disabled{opacity:.45;cursor:default}
+button.pri{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+button.pri:hover{background:var(--ink);opacity:.88}
+button.hot{background:var(--red);border-color:var(--red);color:#fff;font-weight:500}
+button.hot:hover{background:#b23a27}
+button.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.ib{width:40px;height:40px;min-height:0;padding:0;border-color:transparent;border-radius:12px}
+.ib svg{width:20px;height:20px}
+.ib.sm{width:30px;height:30px;border-radius:9px}
+.ib.sm svg{width:16px;height:16px}
+input,select,textarea{background:transparent;border:1px solid var(--hair);border-radius:12px;padding:10px 12px;width:100%;outline:none;transition:border-color .18s,background .18s}
+input:focus,select:focus,textarea:focus{border-color:var(--ink);background:var(--field)}
+::selection{background:rgba(200,68,47,.2)}
+
+#app{display:flex;height:100%}
+
+/* ─────────  Biblioteca (esquerda)  ───────── */
+aside{width:284px;background:var(--side);background-image:var(--noise);border-right:1px solid var(--hair);display:flex;flex-direction:column;flex-shrink:0}
+.brand{display:flex;gap:12px;align-items:center;padding:22px 20px 16px}
+.hanko{width:36px;height:36px;display:grid;place-items:center;background:var(--red);color:#fff;font:600 21px var(--serif);border-radius:5px;transform:rotate(-4deg);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.5),0 2px 6px -2px rgba(200,68,47,.6)}
+.brand b{display:block;font:500 22px/1 var(--serif);letter-spacing:.02em}
+.brand small{display:block;color:var(--mute);font-size:11.5px;margin-top:4px;letter-spacing:.02em}
+.sec{display:flex;justify-content:space-between;align-items:center;padding:18px 20px 6px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute)}
+.pill{min-height:28px;padding:3px 11px;border-radius:99px;font-size:12px;letter-spacing:0;text-transform:none;color:var(--ink)}
+button.pri.pill{color:var(--paper)}
+.list{overflow:auto;padding:0 10px}
+.item{padding:9px 10px;border-radius:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;position:relative;transition:background .15s}
+.item:hover{background:var(--h1)}
+.item.sel{background:var(--h2)}
+.item.sel::before{content:"";position:absolute;left:-10px;top:12px;bottom:12px;width:3px;border-radius:0 3px 3px 0;background:var(--red)}
+.item .lbl{display:flex;align-items:center;gap:10px;min-width:0}
+.item .lbl b{display:block;font:500 15px/1.25 var(--serif);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .lbl small{display:block;color:var(--mute);font-size:11.5px;margin-top:2px}
+.item.note .lbl{display:block}
+.item>small{color:var(--mute);font-size:12px;display:flex;gap:8px;align-items:center}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ink);flex-shrink:0}
+.dot.hollow{background:none;border:1.5px solid var(--mute)}
+.x{color:var(--mute);font-size:16px;line-height:1;padding:2px 4px;border-radius:6px;opacity:0;transition:opacity .15s}
+.item:hover .x{opacity:1}
+.x:hover{color:var(--red)}
+@media(hover:none){.x{opacity:.5}}
+#projList{max-height:34%;flex-shrink:0}
+#noteList{flex:1}
+.sync{display:flex;align-items:center;gap:9px;padding:4px 12px 10px;color:var(--mute);font-size:12px;cursor:pointer}
+.sync .dot{background:var(--mute)}
+.sync[data-m=ok] .dot{background:var(--pine)}
+.sync[data-m=busy] .dot{background:#b9892f;animation:pulse 1s ease-in-out infinite}
+.sync[data-m=err] .dot{background:var(--red)}
+.sync[data-m=off] .dot{background:none;border:1.5px solid var(--mute)}
+@keyframes pulse{50%{opacity:.25}}
+.modal textarea{font:12px/1.55 ui-monospace,Menlo,monospace;resize:vertical;min-height:84px}
+.modal .sub{margin:18px 0 0;padding-top:16px;border-top:1px solid var(--hair2);font:500 18px var(--serif)}
+.empty{color:var(--mute);font-size:13px;padding:10px;line-height:1.6}
+.foot{padding:12px 14px;border-top:1px solid var(--hair2)}
+.foot button{width:100%;justify-content:flex-start;border-color:transparent;color:var(--ink2)}
+
+/* ─────────  Mesa de trabalho  ───────── */
+main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative;background:radial-gradient(1100px 520px at 50% -8%,var(--stone2),transparent 70%),var(--stone)}
+.top{display:flex;gap:6px;padding:14px 22px 6px;align-items:center}
+.top input.title{flex:1;min-width:120px;border:0;border-radius:8px;padding:6px 8px;margin-left:-8px;font:500 25px/1.2 var(--serif);letter-spacing:.01em}
+.top input.title:focus{background:var(--field)}
+.top input.title::placeholder{color:var(--mute)}
+.chip{display:flex;align-items:center;gap:6px;border:1px solid var(--hair);border-radius:99px;padding:0 6px 0 12px;height:36px;color:var(--ink2);max-width:230px;background:var(--glass)}
+.chip select{border:0;background:none;padding:0 18px 0 0;appearance:none;-webkit-appearance:none;font-size:13px;width:auto;max-width:170px;cursor:pointer;text-overflow:ellipsis;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%238d887c' stroke-width='1.4'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 2px center}
+.chip select:focus{background-color:transparent}
+.only-small{display:none!important}
+
+#pages{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;flex:1;overflow:auto;padding:10px 24px 150px;-webkit-overflow-scrolling:touch}
+.pagewrap{margin:0 auto 28px;position:relative}
+.page{position:relative;aspect-ratio:1000/1400;width:100%;border-radius:3px;background-color:var(--paper);background-image:var(--noise);
+  box-shadow:0 1px 1px rgba(28,27,25,.06),0 2px 6px rgba(28,27,25,.05),0 24px 60px -24px rgba(60,52,38,.35)}
+.page.lines{background-image:linear-gradient(var(--line1) 1px,transparent 1px),var(--noise);background-size:100% 4.2857%,160px 160px;background-position:0 3%,0 0}
+.page.grid{background-image:linear-gradient(var(--line2) 1px,transparent 1px),linear-gradient(90deg,var(--line2) 1px,transparent 1px),var(--noise);background-size:3% 2.14%,3% 2.14%,160px 160px}
+.page canvas{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;position:absolute;inset:0;width:100%;height:100%;border-radius:3px}
+.pnum{position:absolute;left:0;right:0;bottom:14px;text-align:center;font:400 12px var(--serif);letter-spacing:.2em;color:var(--mute);pointer-events:none}
+.pgbtns{position:absolute;right:-6px;top:-6px}
+.pgbtns button{min-height:28px;padding:2px 9px;background:var(--paper);box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.hint{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;pointer-events:none;color:var(--ink)}
+.hint b{font:400 min(30vw,220px)/1 var(--serif);opacity:.045}
+.hint span{font:400 13px var(--serif);letter-spacing:.3em;color:var(--mute);margin-top:-30px}
+
+/* ─────────  Dock flutuante  ───────── */
+.dock{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:2px;padding:7px 10px;max-width:calc(100% - 24px);overflow-x:auto;scrollbar-width:none;
+  background:var(--glass);-webkit-backdrop-filter:blur(22px) saturate(1.3);backdrop-filter:blur(22px) saturate(1.3);border:1px solid var(--hair);border-radius:24px;
+  box-shadow:0 1px 1px rgba(28,27,25,.05),0 18px 40px -12px rgba(60,52,38,.35)}
+.dock::-webkit-scrollbar{display:none}
+.dock>*{flex-shrink:0}
+main{container-type:inline-size}
+@container (max-width:780px){.zg{display:none}.dock .ib{width:36px;height:36px}.vr{margin:0 5px}input[type=range]{width:64px}.dock{bottom:16px}}
+.vr{width:1px;height:22px;background:var(--hair);margin:0 8px;flex-shrink:0}
+#swatches{display:flex;gap:9px;align-items:center;padding:0 4px}
+.sw{width:22px;height:22px;min-height:0;padding:0;border-radius:50%;border:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);transition:transform .15s var(--ease),box-shadow .15s}
+.sw.on{box-shadow:0 0 0 2.5px var(--paper),0 0 0 4px var(--ink);transform:scale(1.04)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:86px;height:22px;padding:0;border:0;background:none;margin:0 6px}
+input[type=range]::-webkit-slider-runnable-track{height:2px;background:var(--hair);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--ink);margin-top:-7px;border:3px solid var(--paper);box-shadow:0 0 0 1px var(--hair)}
+input[type=range]::-moz-range-track{height:2px;background:var(--hair)}
+input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--ink);border:3px solid var(--paper)}
+select.mini{width:auto;border:0;background:none;padding:8px 6px;font-size:12.5px;color:var(--ink2);cursor:pointer;min-height:40px}
+#zv{min-width:44px;text-align:center;font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums}
+
+/* ─────────  Insight (direita)  ───────── */
+section.right{width:400px;background:var(--side);background-image:var(--noise);border-left:1px solid var(--hair);display:flex;flex-direction:column;flex-shrink:0}
+.rhead{display:flex;justify-content:space-between;align-items:flex-start;padding:22px 24px 4px}
+.rhead small{font:400 12px var(--serif);color:var(--mute);letter-spacing:.3em}
+.rhead h2{margin:2px 0 0;font:500 26px/1.1 var(--serif);letter-spacing:.01em}
+.tabs{display:flex;gap:22px;padding:10px 24px 0;border-bottom:1px solid var(--hair2)}
+.tabs button{border:0;border-radius:0;padding:10px 0;min-height:0;color:var(--mute);border-bottom:2px solid transparent;margin-bottom:-1px;background:none;font-size:13.5px}
+.tabs button:hover{background:none;color:var(--ink)}
+.tabs button.on{background:none;color:var(--ink);border-bottom-color:var(--red)}
+.tab{display:none;flex:1;overflow:auto;padding:20px 24px 28px;flex-direction:column;gap:14px}
+.tab.on{display:flex}
+.row2{display:grid;grid-template-columns:1fr auto;gap:8px}
+textarea#txt{flex:1;min-height:260px;resize:vertical;font:400 16px/1.85 var(--serif);padding:16px 18px;background:var(--field);border-radius:16px}
+.ghostline{border-style:dashed;color:var(--ink2)}
+.mut{color:var(--mute);font-size:12.5px}
+select#scope{appearance:none;-webkit-appearance:none;background-color:var(--field);padding-right:30px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%238d887c' stroke-width='1.4'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+input#norma{border:0;border-bottom:1px solid var(--hair);border-radius:0;padding:8px 2px;background:none;font:400 15px var(--serif)}
+input#norma:focus{background:none;border-bottom-color:var(--ink)}
+.acts{display:grid;gap:2px}
+.act{justify-content:flex-start;text-align:left;border:0;border-radius:14px;padding:11px 12px;gap:14px;min-height:0}
+.act .n{font:500 22px var(--serif);width:28px;text-align:center;color:var(--ink);opacity:.85}
+.act span:last-child{display:block}
+.act b{display:block;font-weight:500;font-size:14px}
+.act small{display:block;color:var(--mute);font-size:12px;margin-top:1px}
+.act:hover{background:var(--h1)}
+.act:hover .n{color:var(--red)}
+.big{min-height:46px;border-radius:14px}
+#aiOut{margin-top:6px}
+.card{padding:20px 0 6px;border-top:1px solid var(--hair);animation:in .45s var(--ease)}
+@keyframes in{from{opacity:0;transform:translateY(6px)}}
+.card h4{margin:0 0 10px;display:flex;justify-content:space-between;align-items:center;font:500 18px var(--serif)}
+.card h4 span{display:flex;align-items:center;gap:10px}
+.card h4 .n{font-style:normal;color:var(--red);font-size:20px}
+.stamp{margin-top:10px;font-size:11px;color:var(--mute);letter-spacing:.04em}
+.md{font-size:14px;line-height:1.7;color:var(--ink2)}
+.md h1,.md h2,.md h3{font:500 15px var(--serif);color:var(--ink);margin:14px 0 4px}
+.md ul{padding-left:18px;margin:4px 0}
+.md li::marker{color:var(--red)}
+.md table{border-collapse:collapse;width:100%;font-size:12.5px;margin:8px 0;line-height:1.5}
+.md th,.md td{border:0;border-bottom:1px solid var(--hair2);padding:7px 8px 7px 0;text-align:left;vertical-align:top}
+.md th{font-weight:500;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);border-bottom-color:var(--hair)}
+.md b{color:var(--ink);font-weight:600}
+
+#toast{position:fixed;bottom:104px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:12px 18px;border-radius:14px;font-size:13.5px;display:none;z-index:50;max-width:min(90vw,520px);box-shadow:0 12px 30px -8px rgba(0,0,0,.4);line-height:1.5}
+.modal{position:fixed;inset:0;background:rgba(28,27,25,.34);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:40;padding:12px}
+.modal.on{display:flex}
+.modal .box{background:var(--paper);background-image:var(--noise);border-radius:24px;padding:26px 28px;width:540px;max-width:100%;max-height:92vh;overflow:auto;display:flex;flex-direction:column;gap:8px;box-shadow:0 30px 80px -20px rgba(0,0,0,.45)}
+.modal h3{margin:0 0 6px;font:500 26px var(--serif)}
+.modal label{font-size:12px;color:var(--mute);margin-top:8px;letter-spacing:.02em}
+.modal label:has(input[type=checkbox]){display:flex;align-items:center;gap:10px;color:var(--ink2);font-size:13.5px}
+.modal input[type=checkbox]{width:18px;height:18px;accent-color:var(--ink)}
+.row{display:flex;gap:8px;margin-top:10px}
+.row>*{flex:1}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--hair);border-top-color:var(--red);border-radius:50%;animation:s .8s linear infinite;vertical-align:-2px;margin-right:8px}
+@keyframes s{to{transform:rotate(360deg)}}
+
+@media(max-width:1180px){
+ aside{position:fixed;left:0;top:0;bottom:0;z-index:30;transform:translateX(-100%);transition:transform .32s var(--ease);box-shadow:8px 0 40px rgba(0,0,0,.18)}
+ aside.open{transform:none}
+ section.right{position:fixed;right:0;top:0;bottom:0;z-index:30;transform:translateX(100%);transition:transform .32s var(--ease);box-shadow:-8px 0 40px rgba(0,0,0,.18);width:min(430px,94vw)}
+ section.right.open{transform:none}
+ .only-small{display:inline-flex!important;align-items:center;justify-content:center}
+ .top{padding:12px 14px 4px}
+ #pages{padding:8px 12px 150px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+ <aside id="side">
+  <div class="brand"><span class="hanko">間</span><div><b>Ma</b><small>notas com tinta e silêncio</small></div></div>
+  <div class="sec"><span>Projetos</span><button class="ib sm" onclick="newProject()" title="Novo projeto"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
+  <div class="list" id="projList"></div>
+  <div class="sec"><span>Notas</span><button class="pri pill" onclick="newNote()">Nova nota</button></div>
+  <div class="list" id="noteList"></div>
+  <div class="foot"><div class="sync" id="syncSt" onclick="CL.schedule(0)" title="Sincronizar agora"><i class="dot"></i><span>Só neste iPad</span></div><button onclick="openSettings()"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/></svg>Definições IA</button></div>
+ </aside>
+
+ <main>
+  <header class="top">
+   <button class="ib only-small" onclick="toggle('side')" title="Biblioteca"><svg viewBox="0 0 24 24"><path d="M4 8h16M4 16h16"/></svg></button>
+   <input class="title" id="title" placeholder="Sem título" oninput="curNote().title=this.value;mod();renderLists()">
+   <label class="chip"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><select id="projSel" onchange="setProject(this.value)"></select></label>
+   <button class="ib" onclick="newProject(true)" title="Novo projeto para esta nota"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M12 10.5v5M9.5 13h5"/></svg></button>
+   <button class="ib" onclick="cycleTheme()" title="Tema claro / escuro"><svg id="themeIco" viewBox="0 0 24 24"></svg></button>
+   <button class="ib" onclick="exportMd()" title="Exportar .md"><svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 11l4.5 4.5 4.5-4.5M5 20h14"/></svg></button>
+   <button class="hot only-small" onclick="toggle('rightp')"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>Insight</button>
+  </header>
+
+  <div id="pages"></div>
+
+  <nav class="dock">
+   <button id="t_pen" class="ib on" onclick="setTool('pen')" title="Caneta"><svg viewBox="0 0 24 24"><path d="M4 20l1-4L16.5 4.5a2.1 2.1 0 013 3L8 19l-4 1z"/><path d="M14.5 6.5l3 3"/></svg></button>
+   <button id="t_hl" class="ib" onclick="setTool('hl')" title="Marca-texto"><svg viewBox="0 0 24 24"><path d="M9 13.5l5.5-5.5 4 4-5.5 5.5H9z"/><path d="M5 20h8M9 17.5L7 20"/></svg></button>
+   <button id="t_er" class="ib" onclick="setTool('er')" title="Borracha"><svg viewBox="0 0 24 24"><path d="M7 18l-3-3a1.6 1.6 0 010-2.2l8.6-8.6a1.6 1.6 0 012.2 0l4.4 4.4a1.6 1.6 0 010 2.2L11 18z"/><path d="M11 18h9M8.5 9l6.5 6.5"/></svg></button>
+   <i class="vr"></i>
+   <span id="swatches"></span>
+   <input type="range" id="size" min="1" max="12" value="3" oninput="W=+this.value" title="Espessura">
+   <i class="vr"></i>
+   <button class="ib" onclick="undo()" title="Desfazer"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg></button>
+   <button class="ib" onclick="redo()" title="Refazer"><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 000 11H13"/></svg></button>
+   <i class="vr"></i>
+   <select id="bg" class="mini" onchange="setBg(this.value)"><option value="lines">Pauta</option><option value="grid">Grelha</option><option value="blank">Liso</option></select>
+   <button class="ib" onclick="addPage()" title="Nova página"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M12 11v6M9 14h6"/></svg></button>
+   <i class="vr zg"></i>
+   <button class="ib sm zg" onclick="zoomBy(-.25)" title="Reduzir"><svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button>
+   <span id="zv" class="zg">100%</span>
+   <button class="ib sm zg" onclick="zoomBy(.25)" title="Ampliar"><svg viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg></button>
+  </nav>
+ </main>
+
+ <section class="right" id="rightp">
+  <div class="rhead"><div><small>洞察</small><h2>Insight</h2></div><button class="ib only-small" onclick="toggle('rightp')" title="Fechar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="tabs">
+   <button id="tb_txt" class="on" onclick="tab('txt')">Texto</button>
+   <button id="tb_ai" onclick="tab('ai')">Análise</button>
+  </div>
+  <div class="tab on" id="tab_txt">
+   <div class="row2">
+    <button class="pri big" id="btnTr" onclick="transcribe()"><svg viewBox="0 0 24 24"><path d="M4 20l1-4L16.5 4.5a2.1 2.1 0 013 3L8 19l-4 1z"/></svg>Manuscrito → texto</button>
+    <button class="big" id="btnDict" onclick="dictate()"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg><span id="dictL">Ditar</span></button>
+   </div>
+   <textarea id="txt" placeholder="A transcrição do teu manuscrito aparece aqui — podes corrigi-la, escrever ou ditar." oninput="curNote().text=this.value;mod()"></textarea>
+   <button class="ghostline" onclick="suggestProject()"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>Sugerir projeto</button>
+   <div class="mut" id="status"></div>
+  </div>
+  <div class="tab" id="tab_ai">
+   <select id="scope" onchange="renderAI()"><option value="note">Esta nota</option><option value="project">O projeto inteiro</option></select>
+   <input id="norma" placeholder="Referencial de conformidade — ex.: ISO 9001:2015, RGPD" value="ISO 9001:2015">
+   <div class="acts">
+    <button class="act" onclick="analyze('resumo')"><span class="n">一</span><span><b>Resumo</b><small>O essencial em poucas linhas</small></span></button>
+    <button class="act" onclick="analyze('executivo')"><span class="n">二</span><span><b>Resumo executivo</b><small>Para decidir em 30 segundos</small></span></button>
+    <button class="act" onclick="analyze('acoes')"><span class="n">三</span><span><b>Plano de ações</b><small>Quem, o quê, até quando</small></span></button>
+    <button class="act" onclick="analyze('melhorias')"><span class="n">四</span><span><b>Melhorias</b><small>O que pode ficar melhor</small></span></button>
+    <button class="act" onclick="analyze('conformidade')"><span class="n">五</span><span><b>Conformidade</b><small>Leitura face ao referencial</small></span></button>
+   </div>
+   <button class="hot big" onclick="analyzeAll()"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>Gerar tudo</button>
+   <div id="aiOut"></div>
+  </div>
+ </section>
+</div>
+
+<div class="modal" id="mSet"><div class="box">
+ <h3>Definições IA</h3>
+ <label>Fornecedor principal</label>
+ <select id="s_provider"><option value="hf">Hugging Face (tier grátis)</option><option value="grok">Grok (xAI)</option></select>
+ <label><input type="checkbox" id="s_fallback"> Se falhar, tentar o outro fornecedor</label>
+ <label>Token Hugging Face (hf_…, com permissão "Inference Providers")</label>
+ <input id="s_hfKey" type="password" placeholder="hf_xxx">
+ <label>Modelo de texto (HF)</label><input id="s_hfModel">
+ <label>Modelo de visão / manuscrito (HF)</label><input id="s_hfVision">
+ <label>Chave API xAI (Grok)</label>
+ <input id="s_grokKey" type="password" placeholder="xai-xxx">
+ <label>Modelo de texto (Grok)</label><input id="s_grokModel">
+ <label>Modelo de visão / manuscrito (Grok)</label><input id="s_grokVision">
+ <label><input type="checkbox" id="s_auto"> Criar/associar projeto automaticamente após transcrever</label>
+ <label><input type="checkbox" id="s_penonly"> Só a caneta escreve (o dedo faz scroll)</label>
+ <h4 class="sub">Sincronização · Firebase</h4>
+ <label>Configuração Firebase (cola o objeto firebaseConfig da consola)</label>
+ <textarea id="s_fbCfg" placeholder='{ apiKey: "…", authDomain: "…", projectId: "…", appId: "…" }'></textarea>
+ <label>Email</label><input id="s_email" type="email" autocomplete="username">
+ <label>Palavra-passe</label><input id="s_pass" type="password" autocomplete="current-password">
+ <div class="row"><button onclick="cloudAuth('in')">Entrar</button><button onclick="cloudAuth('up')">Criar conta</button><button onclick="cloudAuth('out')">Sair</button></div>
+ <div class="mut" id="s_acct"></div>
+ <div class="mut" style="margin-top:6px;line-height:1.6">As chaves ficam só neste dispositivo e são enviadas apenas ao respetivo fornecedor. Os nomes dos modelos mudam com o tempo — se der erro, confirma-os no site do fornecedor.</div>
+ <div class="row"><button onclick="closeSettings()">Cancelar</button><button class="pri" onclick="saveSettings()">Guardar</button></div>
+</div></div>
+<div id="toast"></div>
+
+<script>
+/* ============ Estado & armazenamento (IndexedDB) ============ */
+const PW=1000, PH=1400;
+let DB={projects:[],notes:[],cur:null,filter:'all'};
+let S=JSON.parse(localStorage.getItem('notasia_cfg')||'null')||{
+  provider:'hf',fallback:true,hfKey:'',hfModel:'Qwen/Qwen2.5-72B-Instruct',hfVision:'Qwen/Qwen2.5-VL-72B-Instruct',
+  grokKey:'',grokModel:'grok-4',grokVision:'grok-4',auto:true,penonly:true};
+let tool='pen',color='#1c1b19',W=3;
+let CL={fb:null,db:null,auth:null,user:null,unsubs:[],syncing:false,again:false,timer:0,first:{n:false,p:false},q:Promise.resolve(),schedule(){}};
+const COLORS=['#1c1b19','#264a6b','#c8442f','#4f6f52','#b9892f','#6b4a7a'];
+/* no modo escuro a tinta "sumi" passa a clara; as restantes cores aclaram-se (guardadas sempre na cor original) */
+const DM={'#1c1b19':'#ece8de','#264a6b':'#7fa6d1','#c8442f':'#e8745e','#4f6f52':'#8fb592','#b9892f':'#dcb15c','#6b4a7a':'#b595c6'};
+let DARK=false;const inkC=c=>DARK&&DM[c]||c;
+const $=id=>document.getElementById(id);
+const uid=()=>Math.random().toString(36).slice(2,10);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('notasia',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function load(){try{const d=await idb();const v=await new Promise(r=>{const q=d.transaction('kv').objectStore('kv').get('db');q.onsuccess=()=>r(q.result)});if(v)DB=Object.assign(DB,v)}catch(e){console.warn(e)}}
+function mod(n){(n||curNote()).updated=Date.now();save()}
+let st;function save(){if(CL.user)CL.schedule();clearTimeout(st);st=setTimeout(async()=>{try{const d=await idb();d.transaction('kv','readwrite').objectStore('kv').put(DB,'db')}catch(e){console.warn(e)}},400)}
+function toast(m,ms=3500){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);if(ms)toast.t=setTimeout(()=>t.style.display='none',ms)}
+function toggle(id){$(id).classList.toggle('open')}
+
+/* ============ Projetos & notas ============ */
+const curNote=()=>DB.notes.find(n=>n.id===DB.cur);
+const projOf=id=>DB.projects.find(p=>p.id===id);
+function newNote(){const n={id:uid(),title:'Nota '+new Date().toLocaleDateString('pt-PT'),projectId:DB.filter.length>5&&projOf(DB.filter)?DB.filter:null,
+  pages:[{strokes:[],bg:'lines'}],text:'',ai:{},created:Date.now(),updated:Date.now()};
+  DB.notes.unshift(n);openNote(n.id);save()}
+function newProject(assign){const name=prompt('Nome do projeto:');if(!name)return;const p={id:uid(),name:name.trim(),ai:{},created:Date.now(),updated:Date.now()};DB.projects.push(p);
+  if(assign&&curNote()){curNote().projectId=p.id;curNote().updated=Date.now()}save();renderLists();loadNoteUI()}
+function setProject(v){const n=curNote();if(!n)return;if(v==='__new'){newProject(true);return}n.projectId=v||null;mod(n);renderLists();renderAI()}
+function openNote(id){DB.cur=id;$('side').classList.remove('open');loadNoteUI();renderLists();save()}
+function delNote(id,e){e.stopPropagation();if(!confirm('Apagar esta nota?'))return;{const o=DB.notes.find(n=>n.id===id);if(o&&(o.synced||CL.user))queueDel('notes',id)}DB.notes=DB.notes.filter(n=>n.id!==id);if(DB.cur===id)DB.cur=DB.notes[0]?.id||null;if(!DB.cur)return newNote();save();loadNoteUI();renderLists()}
+function delProject(id,e){e.stopPropagation();if(!confirm('Apagar o projeto? (as notas ficam sem projeto)'))return;{const o=projOf(id);if(o&&(o.synced||CL.user))queueDel('projects',id)}DB.projects=DB.projects.filter(p=>p.id!==id);DB.notes.forEach(n=>{if(n.projectId===id){n.projectId=null;n.updated=Date.now()}});if(DB.filter===id)DB.filter='all';save();renderLists();loadNoteUI()}
+function renderLists(){
+  const cnt=id=>DB.notes.filter(n=>id==='all'?true:id==='none'?!n.projectId:n.projectId===id).length;
+  const fx=(id,l,hollow)=>`<div class="item ${DB.filter===id?'sel':''}" onclick="DB.filter='${id}';renderLists()"><span class="lbl"><i class="dot ${hollow?'hollow':''}"></i>${l}</span><small>${cnt(id)}</small></div>`;
+  $('projList').innerHTML=fx('all','Todas as notas',1)+fx('none','Sem projeto',1)+DB.projects.map(p=>`<div class="item ${DB.filter===p.id?'sel':''}" onclick="DB.filter='${p.id}';renderLists()"><span class="lbl"><i class="dot"></i>${esc(p.name)}</span><small>${cnt(p.id)}<a class="x" onclick="delProject('${p.id}',event)" title="Apagar projeto">×</a></small></div>`).join('');
+  const f=DB.notes.filter(n=>DB.filter==='all'?true:DB.filter==='none'?!n.projectId:n.projectId===DB.filter);
+  $('noteList').innerHTML=f.map(n=>`<div class="item note ${n.id===DB.cur?'sel':''}" onclick="openNote('${n.id}')"><span class="lbl"><b>${esc(n.title||'Sem título')}</b><small>${n.projectId&&projOf(n.projectId)?esc(projOf(n.projectId).name)+' · ':''}${new Date(n.updated||n.created).toLocaleDateString('pt-PT',{day:'numeric',month:'short'})}</small></span><small><a class="x" onclick="delNote('${n.id}',event)" title="Apagar nota">×</a></small></div>`).join('')||'<div class="empty">Ainda sem notas.<br>Começa com uma folha em branco.</div>';
+}
+function loadNoteUI(){
+  const n=curNote();if(!n)return;
+  $('title').value=n.title;$('txt').value=n.text||'';
+  $('projSel').innerHTML='<option value="">— Sem projeto —</option>'+DB.projects.map(p=>`<option value="${p.id}" ${p.id===n.projectId?'selected':''}>${esc(p.name)}</option>`).join('')+'<option value="__new">Criar novo projeto…</option>';
+  $('bg').value=n.pages[0].bg||'lines';
+  buildPages();renderAI();
+}
+
+/* ============ Canvas / caneta ============ */
+const K=2;
+let pageEls=[],undoS=[],redoS=[],zoom=1,io=null;
+const rad=(w,p)=>w*(.4+p*1.1)/2;
+function buildPages(){
+  const n=curNote(),box=$('pages');
+  if(io)io.disconnect();
+  box.innerHTML='';pageEls=[];undoS=[];redoS=[];
+  io=new IntersectionObserver(es=>es.forEach(e=>ensure(+e.target.dataset.i,e.isIntersecting)),{root:box,rootMargin:'1400px 0px'});
+  n.pages.forEach((pg,i)=>{
+    const w=document.createElement('div');w.className='pagewrap';w.dataset.i=i;
+    w.innerHTML=`<div class="page ${pg.bg||'lines'}"><canvas class="base" width="1" height="1"></canvas><canvas class="live" width="1" height="1"></canvas><span class="pnum">${i+1} / ${n.pages.length}</span>${(i===0&&!pg.strokes.length)?'<div class="hint"><b>間</b><span>ESCREVE COM A CANETA</span></div>':''}</div>`;
+    box.appendChild(w);
+    pageEls.push({w,base:w.querySelector('.base'),live:w.querySelector('.live'),div:w.firstChild});
+    if(n.pages.length>1){const b=document.createElement('div');b.className='pgbtns';b.innerHTML=`<button onclick="delPage(${i})" style="min-height:28px;padding:2px 8px">🗑</button>`;w.appendChild(b)}
+    bindCanvas(pageEls[i].live,i);io.observe(w);
+  });
+  applyTouch();applyZoom();
+}
+/* só mantém em memória as páginas visíveis (ou quase) */
+function ensure(i,on){
+  const p=pageEls[i];if(!p)return;
+  if(on&&p.base.width!==PW*K){p.base.width=p.live.width=PW*K;p.base.height=p.live.height=PH*K;render(i)}
+  else if(!on&&p.base.width!==1){p.base.width=p.live.width=1;p.base.height=p.live.height=1}
+}
+function applyTouch(){pageEls.forEach(p=>p.live.style.touchAction=S.penonly?'pan-x pan-y':'none')}
+function applyZoom(){const base=Math.max(300,Math.min(900,$('pages').clientWidth-32));pageEls.forEach(p=>p.w.style.width=(base*zoom)+'px');$('zv').textContent=Math.round(zoom*100)+'%'}
+function zoomBy(d){zoom=Math.max(.75,Math.min(2.5,zoom+d));applyZoom()}
+addEventListener('resize',applyZoom);
+
+/* traço = forma contínua com espessura variável (sem cantos nem manchas) */
+function drawStroke(ctx,s){
+  const p=s.pts,n=p.length;if(!n)return;
+  ctx.save();
+  if(s.tool==='hl'){
+    ctx.globalAlpha=.3;ctx.strokeStyle=inkC(s.color);ctx.lineWidth=s.w*5;ctx.lineCap='round';ctx.lineJoin='round';
+    ctx.beginPath();ctx.moveTo(p[0][0],p[0][1]);if(n===1)ctx.lineTo(p[0][0]+.01,p[0][1]);
+    for(let i=1;i<n-1;i++)ctx.quadraticCurveTo(p[i][0],p[i][1],(p[i][0]+p[i+1][0])/2,(p[i][1]+p[i+1][1])/2);
+    if(n>1)ctx.lineTo(p[n-1][0],p[n-1][1]);
+    ctx.stroke();ctx.restore();return;
+  }
+  ctx.fillStyle=inkC(s.color);
+  const dot=q=>{ctx.beginPath();ctx.arc(q[0],q[1],rad(s.w,q[2]),0,6.2832);ctx.fill()};
+  if(n<3){
+    if(n===2){ctx.strokeStyle=inkC(s.color);ctx.lineCap='round';ctx.lineWidth=rad(s.w,(p[0][2]+p[1][2])/2)*2;ctx.beginPath();ctx.moveTo(p[0][0],p[0][1]);ctx.lineTo(p[1][0],p[1][1]);ctx.stroke()}
+    else dot(p[0]);
+    ctx.restore();return;
+  }
+  const L=[],R=[];let nx=0,ny=0;
+  for(let i=0;i<n;i++){
+    const a=p[Math.max(0,i-1)],b=p[Math.min(n-1,i+1)];const dx=b[0]-a[0],dy=b[1]-a[1],d=Math.hypot(dx,dy);
+    if(d>1e-6){nx=-dy/d;ny=dx/d}
+    const r=rad(s.w,p[i][2]);L.push([p[i][0]+nx*r,p[i][1]+ny*r]);R.push([p[i][0]-nx*r,p[i][1]-ny*r]);
+  }
+  ctx.beginPath();ctx.moveTo(L[0][0],L[0][1]);
+  for(let i=1;i<n-1;i++)ctx.quadraticCurveTo(L[i][0],L[i][1],(L[i][0]+L[i+1][0])/2,(L[i][1]+L[i+1][1])/2);
+  ctx.lineTo(L[n-1][0],L[n-1][1]);ctx.lineTo(R[n-1][0],R[n-1][1]);
+  for(let i=n-2;i>0;i--)ctx.quadraticCurveTo(R[i][0],R[i][1],(R[i][0]+R[i-1][0])/2,(R[i][1]+R[i-1][1])/2);
+  ctx.lineTo(R[0][0],R[0][1]);ctx.closePath();ctx.fill();
+  dot(p[0]);dot(p[n-1]);
+  ctx.restore();
+}
+function render(i){
+  const p=pageEls[i];if(!p||p.base.width===1)return;
+  const ctx=p.base.getContext('2d');ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,p.base.width,p.base.height);ctx.setTransform(K,0,0,K,0,0);
+  curNote().pages[i].strokes.forEach(s=>drawStroke(ctx,s));
+}
+/* duas camadas: "live" (traço em curso, 1 desenho por frame) + "base" (já escrito) */
+function bindCanvas(cv,i){
+  let cur=null,erasing=false,rect=null,raf=0,ereq=0;
+  const pos=e=>{
+    let p=e.pointerType==='pen'?(e.pressure||.5):.5;
+    if(e.pointerType==='pen'&&tool==='pen'){const t=Math.max(Math.abs(e.tiltX||0),Math.abs(e.tiltY||0));p=Math.min(1,p*(1+t/90*.7))}
+    return[(e.clientX-rect.left)/rect.width*PW,(e.clientY-rect.top)/rect.height*PH,p];
+  };
+  const allowed=e=>!(S.penonly&&e.pointerType==='touch');
+  const frame=()=>{
+    raf=0;if(!cur)return;
+    const c=cv.getContext('2d');c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,cv.width,cv.height);c.setTransform(K,0,0,K,0,0);
+    let s=cur;const n=cur.pts.length;
+    if(cur.tool==='pen'&&n>=2){const a=cur.pts[n-2],b=cur.pts[n-1];s={...cur,pts:cur.pts.concat([[b[0]+(b[0]-a[0])*.7,b[1]+(b[1]-a[1])*.7,b[2]]])}} // predição
+    drawStroke(c,s);
+  };
+  const schedule=()=>{if(!raf)raf=requestAnimationFrame(frame)};
+  const add=pt=>{
+    if(!cur.pts.length){cur.pts.push(pt);return}
+    const q=cur.pts[cur.pts.length-1];
+    const sx=q[0]+(pt[0]-q[0])*.6,sy=q[1]+(pt[1]-q[1])*.6,sp=q[2]+(pt[2]-q[2])*.5; // estabilização leve
+    if(Math.hypot(sx-q[0],sy-q[1])<.4)return;
+    cur.pts.push([sx,sy,sp]);
+  };
+  const erase=pt=>{
+    const pg=curNote().pages[i],before=pg.strokes.length;
+    pg.strokes=pg.strokes.filter(s=>!s.pts.some(q=>Math.hypot(q[0]-pt[0],q[1]-pt[1])<18));
+    if(pg.strokes.length!==before&&!ereq)ereq=requestAnimationFrame(()=>{ereq=0;render(i)});
+  };
+  cv.addEventListener('pointerdown',e=>{
+    if(!allowed(e))return;e.preventDefault();cv.setPointerCapture(e.pointerId);rect=cv.getBoundingClientRect();const h=pageEls[i].div.querySelector('.hint');if(h)h.remove();
+    const pg=curNote().pages[i];undoS.push({i,strokes:pg.strokes.slice()});if(undoS.length>60)undoS.shift();redoS=[];
+    const pt=pos(e);
+    if(tool==='er'){erasing=true;erase(pt)}else{cur={tool,color,w:W,pts:[]};add(pt);schedule()}
+  });
+  cv.addEventListener('pointermove',e=>{
+    if(!cur&&!erasing)return;e.preventDefault();
+    const evs=e.getCoalescedEvents?e.getCoalescedEvents():[];
+    for(const ev of (evs.length?evs:[e])){const pt=pos(ev);if(erasing)erase(pt);else add(pt)}
+    if(cur)schedule();
+  });
+  const end=()=>{
+    if(cur){
+      if(raf){cancelAnimationFrame(raf);raf=0}
+      if(cur.pts.length){
+        curNote().pages[i].strokes.push(cur);
+        const b=pageEls[i].base.getContext('2d');b.setTransform(K,0,0,K,0,0);drawStroke(b,cur);
+      }
+      const c=cv.getContext('2d');c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,cv.width,cv.height);
+      cur=null;touch();
+    }
+    if(erasing){erasing=false;touch()}
+  };
+  cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+  cv.addEventListener('contextmenu',e=>e.preventDefault());
+}
+function touch(){curNote().updated=Date.now();save()}
+function undo(){const a=undoS.pop();if(!a)return;const pg=curNote().pages[a.i];redoS.push({i:a.i,strokes:pg.strokes});pg.strokes=a.strokes;render(a.i);touch()}
+function redo(){const a=redoS.pop();if(!a)return;const pg=curNote().pages[a.i];undoS.push({i:a.i,strokes:pg.strokes});pg.strokes=a.strokes;render(a.i);touch()}
+function setTool(t){tool=t;['pen','hl','er'].forEach(x=>$('t_'+x).classList.toggle('on',x===t))}
+function setBg(v){const n=curNote();n.pages.forEach(p=>p.bg=v);pageEls.forEach(p=>p.div.className='page '+v);mod(n)}
+function addPage(){const n=curNote();n.pages.push({strokes:[],bg:n.pages[0].bg});mod(n);buildPages();setTimeout(()=>$('pages').scrollTo({top:1e6,behavior:'smooth'}),50)}
+function delPage(i){if(!confirm('Apagar a página '+(i+1)+'?'))return;curNote().pages.splice(i,1);mod();buildPages()}
+$('swatches').innerHTML=COLORS.map((c,i)=>`<button class="sw ${i?'':'on'}" style="background:${c}" onclick="color='${c}';document.querySelectorAll('.sw').forEach(b=>b.classList.remove('on'));this.classList.add('on');if(tool==='er')setTool('pen')"></button>`).join('');
+
+const mq=matchMedia('(prefers-color-scheme: dark)');
+const ICO_SUN='<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6L7 7M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/>',ICO_MOON='<path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/>';
+function applyTheme(redraw){
+  const t=localStorage.getItem('notasia_theme');DARK=t?t==='dark':mq.matches;
+  document.documentElement.dataset.theme=DARK?'dark':'light';
+  document.querySelector('meta[name=theme-color]').content=DARK?'#141413':'#e6e2d8';
+  $('themeIco').innerHTML=DARK?ICO_SUN:ICO_MOON;
+  document.querySelectorAll('.sw').forEach((b,i)=>b.style.background=inkC(COLORS[i]));
+  if(redraw)pageEls.forEach((_,i)=>render(i));
+}
+function cycleTheme(){localStorage.setItem('notasia_theme',DARK?'light':'dark');applyTheme(true)}
+mq.addEventListener('change',()=>{if(!localStorage.getItem('notasia_theme'))applyTheme(true)});
+applyTheme(false);
+
+function pageToJpeg(pg){const d0=DARK;DARK=false;
+  const c=document.createElement('canvas');c.width=1400;c.height=1960;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);
+  x.scale(1.4,1.4);
+  pg.strokes.forEach(s=>{const s2={...s,tool:s.tool==='hl'?'hl':'pen',color:s.tool==='hl'?s.color:'#000'};drawStroke(x,s2)});
+  const out=c.toDataURL('image/jpeg',.85);DARK=d0;return out;
+}
+
+/* ============ IA ============ */
+function cfg(p){return p==='hf'?{url:'https://router.huggingface.co/v1/chat/completions',key:S.hfKey,text:S.hfModel,vision:S.hfVision,name:'Hugging Face'}
+  :{url:'https://api.x.ai/v1/chat/completions',key:S.grokKey,text:S.grokModel,vision:S.grokVision,name:'Grok'}}
+async function chatWith(p,messages,vision){
+  const c=cfg(p);if(!c.key)throw new Error('Falta a chave de '+c.name+' (Definições).');
+  const r=await fetch(c.url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+c.key},
+    body:JSON.stringify({model:vision?c.vision:c.text,messages,temperature:.3,max_tokens:2500})});
+  if(!r.ok){let t='';try{t=(await r.json()).error?.message||''}catch(e){}throw new Error(c.name+' '+r.status+': '+(t||r.statusText))}
+  const j=await r.json();return j.choices?.[0]?.message?.content?.trim()||''
+}
+async function chat(messages,vision=false){
+  const order=[S.provider];if(S.fallback)order.push(S.provider==='hf'?'grok':'hf');
+  let last;for(const p of order){try{return await chatWith(p,messages,vision)}catch(e){last=e;console.warn(e)}}
+  throw last;
+}
+const SYS='És um assistente de gestão de notas para um responsável de qualidade em Portugal. Responde sempre em português europeu, de forma clara e objetiva, em Markdown simples (títulos ##, listas com -, tabelas quando pedido). Não inventes factos que não estejam nas notas; se algo não for claro, diz que é uma suposição.';
+
+async function transcribe(){
+  const n=curNote();const btn=$('btnTr');btn.disabled=true;let out=[];
+  try{
+    for(let i=0;i<n.pages.length;i++){
+      if(!n.pages[i].strokes.length)continue;
+      $('status').innerHTML=`<span class="spin"></span>A ler página ${i+1}/${n.pages.length}…`;
+      const img=pageToJpeg(n.pages[i]);
+      const t=await chat([{role:'user',content:[{type:'text',text:'Transcreve fielmente o texto manuscrito desta imagem (português; pode haver termos técnicos, números, setas e listas). Mantém a estrutura (títulos, listas, tabelas simples). Se uma palavra for ilegível escreve [?]. Devolve APENAS a transcrição, sem comentários.'},{type:'image_url',image_url:{url:img}}]}],true);
+      out.push((n.pages.length>1?`### Página ${i+1}\n`:'')+t);
+    }
+    if(!out.length){toast('Escreve algo primeiro 🙂');return}
+    n.text=(n.text?n.text.trim()+'\n\n':'')+out.join('\n\n');$('txt').value=n.text;mod(n);
+    $('status').textContent='Transcrição concluída.';
+    if(S.auto&&!n.projectId)await suggestProject(true);
+  }catch(e){$('status').textContent='';toast('Erro: '+e.message,7000)}
+  finally{btn.disabled=false}
+}
+function parseJSON(t){const m=t.match(/\{[\s\S]*\}/);if(!m)throw new Error('Resposta IA sem JSON');return JSON.parse(m[0])}
+async function suggestProject(auto){
+  const n=curNote();if(!(n.text||'').trim()){toast('Sem texto para analisar. Transcreve primeiro.');return}
+  $('status').innerHTML='<span class="spin"></span>A sugerir projeto…';
+  try{
+    const lista=DB.projects.map(p=>`${p.id}: ${p.name}`).join('\n')||'(nenhum)';
+    const r=await chat([{role:'system',content:SYS},{role:'user',content:`Projetos existentes:\n${lista}\n\nNota:\n${n.text.slice(0,6000)}\n\nDecide se a nota pertence a um projeto existente ou se deve ser criado um novo. Responde APENAS com JSON: {"existing_id": "<id ou null>", "new_name": "<nome curto do projeto ou null>", "title": "<título curto para a nota>", "reason": "<1 frase>"}`}]);
+    const j=parseJSON(r);
+    if(j.title&&/^Nota \d/.test(n.title)){n.title=j.title}
+    if(j.existing_id&&projOf(j.existing_id)){n.projectId=j.existing_id;toast('Associada ao projeto: '+projOf(j.existing_id).name+' — '+(j.reason||''),6000)}
+    else if(j.new_name){
+      const ex=DB.projects.find(p=>p.name.toLowerCase()===j.new_name.toLowerCase());
+      if(ex)n.projectId=ex.id;
+      else if(auto||confirm(`Criar o projeto "${j.new_name}" e associar esta nota?\n${j.reason||''}`)){const p={id:uid(),name:j.new_name,ai:{},created:Date.now(),updated:Date.now()};DB.projects.push(p);n.projectId=p.id;toast('Projeto criado: '+p.name,5000)}
+    }
+    mod(n);renderLists();loadNoteUI();
+  }catch(e){toast('Erro: '+e.message,7000)}
+  $('status').textContent='';
+}
+
+const PROMPTS={
+ resumo:['Resumo','Faz um resumo claro e fiel (máx. 12 linhas) com os pontos principais, decisões e números relevantes.'],
+ executivo:['Resumo executivo','Escreve um resumo executivo para a gestão: ## Contexto (2 linhas), ## Pontos-chave (3-5 bullets), ## Decisões necessárias, ## Riscos/oportunidades. Máx. 200 palavras.'],
+ acoes:['Plano de ações','Extrai e propõe um plano de ações como TABELA Markdown com colunas: # | Ação | Responsável | Prazo | Prioridade (Alta/Média/Baixa) | Estado. Usa o que está nas notas; onde não houver responsável ou prazo escreve "A definir". Depois da tabela, lista em 2-3 bullets as ações implícitas que possam estar em falta.'],
+ melhorias:['Sugestões de melhoria','Analisa as notas e propõe 5-8 sugestões de melhoria concretas (processos, comunicação, riscos, eficiência). Para cada uma: **título**, porquê, e como implementar. Ordena por impacto.'],
+ conformidade:['Análise de conformidade','']
+};
+function scopeText(){
+  const n=curNote(),sc=$('scope').value;
+  if(sc==='project'&&n.projectId){const p=projOf(n.projectId);const notes=DB.notes.filter(x=>x.projectId===p.id);
+    return{label:'Projeto '+p.name,store:p,text:notes.map(x=>`## ${x.title} (${new Date(x.created).toLocaleDateString('pt-PT')})\n${x.text||'(sem texto)'}`).join('\n\n')}}
+  return{label:'Nota '+n.title,store:n,text:n.text||''};
+}
+async function analyze(type,silent){
+  const sc=scopeText();if(!sc.text.trim()){toast('Sem texto. Transcreve o manuscrito primeiro (separador Texto).');return false}
+  let instr=PROMPTS[type][1];const norma=$('norma').value.trim()||'ISO 9001:2015';
+  let key=type;
+  if(type==='conformidade'){instr=`Faz uma análise de conformidade das notas face a: ${norma}. Devolve uma TABELA Markdown: Requisito/cláusula | Evidência nas notas | Estado (Conforme / Parcial / Não conforme / Sem evidência) | Ação recomendada. Depois ## Lacunas principais e ## Evidências a recolher. Não declares conformidade sem evidência nas notas; indica claramente que é uma análise preliminar a validar por auditor.`;key='conformidade'}
+  sc.store.ai=sc.store.ai||{};sc.store.ai[key]={loading:true};renderAI();
+  try{
+    const r=await chat([{role:'system',content:SYS},{role:'user',content:`${instr}\n\nÂmbito: ${sc.label}\n\n--- NOTAS ---\n${sc.text.slice(0,24000)}`}]);
+    sc.store.ai[key]={text:r,at:Date.now(),extra:type==='conformidade'?norma:''};sc.store.updated=Date.now();save();renderAI();return true;
+  }catch(e){delete sc.store.ai[key];renderAI();toast('Erro: '+e.message,7000);return false}
+}
+async function analyzeAll(){for(const t of ['resumo','executivo','acoes','melhorias','conformidade']){if(!await analyze(t))break}}
+function md(t){
+  let h=esc(t).replace(/\r/g,'').split('\n'),out=[],tbl=[],ul=false;
+  const flushT=()=>{if(!tbl.length)return;const rows=tbl.filter(r=>!/^\|?\s*:?-{2,}/.test(r)).map(r=>r.replace(/^\||\|$/g,'').split('|').map(c=>c.trim()));
+    out.push('<table>'+rows.map((r,i)=>'<tr>'+r.map(c=>`<${i?'td':'th'}>${inl(c)}</${i?'td':'th'}>`).join('')+'</tr>').join('')+'</table>');tbl=[]};
+  const inl=s=>s.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\*(.+?)\*/g,'<i>$1</i>');
+  for(const l of h){
+    if(/^\s*\|/.test(l)){tbl.push(l);continue}flushT();
+    if(/^\s*[-*]\s+/.test(l)){if(!ul){out.push('<ul>');ul=true}out.push('<li>'+inl(l.replace(/^\s*[-*]\s+/,''))+'</li>');continue}
+    if(ul){out.push('</ul>');ul=false}
+    const m=l.match(/^(#{1,4})\s+(.*)/);if(m)out.push(`<h3>${inl(m[2])}</h3>`);else if(l.trim())out.push('<p style="margin:4px 0">'+inl(l)+'</p>');
+  }
+  flushT();if(ul)out.push('</ul>');return out.join('');
+}
+const NUM={resumo:'一',executivo:'二',acoes:'三',melhorias:'四',conformidade:'五'};
+const ICO_COPY='<svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/></svg>';
+function renderAI(){
+  const n=curNote();if(!n)return;const sc=$('scope').value==='project'&&n.projectId?projOf(n.projectId):n;
+  if($('scope').value==='project'&&!n.projectId){$('aiOut').innerHTML='<div class="empty">Esta nota ainda não tem projeto. Associa-a a um para analisar o conjunto.</div>';return}
+  const ai=sc.ai||{};
+  $('aiOut').innerHTML=Object.keys(PROMPTS).filter(k=>ai[k]).map(k=>{const a=ai[k];
+    if(a.loading)return`<div class="card"><h4><span><i class="n">${NUM[k]}</i>${PROMPTS[k][0]}</span></h4><span class="spin"></span><span class="mut">A escrever…</span></div>`;
+    return`<div class="card"><h4><span><i class="n">${NUM[k]}</i>${PROMPTS[k][0]}${a.extra?' · '+esc(a.extra):''}</span><button class="ib sm" onclick="copyAI('${k}')" title="Copiar">${ICO_COPY}</button></h4><div class="md">${md(a.text)}</div><div class="stamp">${new Date(a.at).toLocaleString('pt-PT',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div></div>`}).join('')||'<div class="empty">Ainda nada por aqui. Escolhe uma análise acima.</div>';
+}
+function copyAI(k){const n=curNote();const sc=$('scope').value==='project'&&n.projectId?projOf(n.projectId):n;navigator.clipboard.writeText(sc.ai[k].text).then(()=>toast('Copiado'))}
+function tab(t){['txt','ai'].forEach(x=>{$('tab_'+x).classList.toggle('on',x===t);$('tb_'+x).classList.toggle('on',x===t)});if(t==='ai')renderAI()}
+
+/* ============ Ditado, exportação, definições ============ */
+let rec=null;
+function dictate(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){toast('Ditado não suportado neste navegador.');return}
+  if(rec){rec.stop();return}
+  rec=new SR();rec.lang='pt-PT';rec.continuous=true;rec.interimResults=false;$('btnDict').classList.add('on');$('dictL').textContent='Parar';
+  rec.onresult=e=>{const t=[...e.results].slice(e.resultIndex).map(r=>r[0].transcript).join(' ');const n=curNote();n.text=(n.text?n.text+' ':'')+t;$('txt').value=n.text;mod(n)};
+  rec.onend=()=>{rec=null;$('btnDict').classList.remove('on');$('dictL').textContent='Ditar'};rec.start();
+}
+function exportMd(){
+  const n=curNote(),p=projOf(n.projectId);let s=`# ${n.title}\n${p?'Projeto: '+p.name+'\n':''}Data: ${new Date(n.created).toLocaleDateString('pt-PT')}\n\n## Texto\n${n.text||''}\n`;
+  Object.keys(PROMPTS).forEach(k=>{if(n.ai?.[k]?.text)s+=`\n## ${PROMPTS[k][0]}\n${n.ai[k].text}\n`});
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([s],{type:'text/markdown'}));a.download=(n.title||'nota').replace(/[^\w-]+/g,'_')+'.md';a.click();
+}
+const FIELDS={provider:'s_provider',hfKey:'s_hfKey',hfModel:'s_hfModel',hfVision:'s_hfVision',grokKey:'s_grokKey',grokModel:'s_grokModel',grokVision:'s_grokVision'};
+function openSettings(){{const c=localStorage.getItem('notasia_fb');$('s_fbCfg').value=c?JSON.stringify(JSON.parse(c),null,1):'';$('s_email').value=CL.user?.email||$('s_email').value;$('s_acct').textContent=CL.user?('Sessão iniciada: '+CL.user.email):'Sem sessão.'}
+  for(const k in FIELDS)$(FIELDS[k]).value=S[k]||'';$('s_fallback').checked=!!S.fallback;$('s_auto').checked=!!S.auto;$('s_penonly').checked=!!S.penonly;$('mSet').classList.add('on')}
+function closeSettings(){$('mSet').classList.remove('on')}
+function saveSettings(){{const t=$('s_fbCfg').value.trim();if(t){try{localStorage.setItem('notasia_fb',JSON.stringify(parseCfg(t)));if(!CL.fb)fbInit()}catch(e){toast('Configuração Firebase inválida');return}}}
+  for(const k in FIELDS)S[k]=$(FIELDS[k]).value.trim();S.fallback=$('s_fallback').checked;S.auto=$('s_auto').checked;S.penonly=$('s_penonly').checked;
+  localStorage.setItem('notasia_cfg',JSON.stringify(S));applyTouch();closeSettings();toast('Definições guardadas')}
+
+
+/* ============ Nuvem · Firebase (Auth por email + Firestore) ============
+   Local-first: as notas vivem sempre no iPad (IndexedDB); a nuvem é cópia e sincronização.
+   Firestore: users/{uid}/notes/{id}  (+ /pages/p{i}c{k} com os traços comprimidos)
+              users/{uid}/projects/{id}                                          */
+const FBU='https://www.gstatic.com/firebasejs/10.14.1/';
+const T=(p,ms=30000)=>Promise.race([p,new Promise((_,r)=>setTimeout(()=>r(new Error('tempo esgotado')),ms))]);
+const localSave=()=>idb().then(d=>d.transaction('kv','readwrite').objectStore('kv').put(DB,'db')).catch(()=>{});
+function setSync(txt,m){const e=$('syncSt');if(!e)return;e.dataset.m=m||'';e.querySelector('span').textContent=txt}
+const djb=x=>{let h=5381;for(let i=0;i<x.length;i++)h=((h<<5)+h+x.charCodeAt(i))|0;return h};
+const encPage=st=>st.map(s=>({t:s.tool==='hl'?'h':'p',c:s.color,w:s.w,p:s.pts.flatMap(q=>[Math.round(q[0]*10)/10,Math.round(q[1]*10)/10,Math.round(q[2]*100)/100])}));
+const decPage=a=>a.map(s=>{const pts=[];for(let i=0;i<s.p.length;i+=3)pts.push([s.p[i],s.p[i+1],s.p[i+2]]);return{tool:s.t==='h'?'hl':'pen',color:s.c,w:s.w,pts}});
+const sigE=e=>djb(JSON.stringify(e))+':'+e.length;
+async function pack(o){
+  const j=JSON.stringify(o);if(typeof CompressionStream==='undefined')return '0:'+j;
+  const buf=new Uint8Array(await new Response(new Blob([j]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
+  let b='';for(let i=0;i<buf.length;i+=0x8000)b+=String.fromCharCode.apply(null,buf.subarray(i,i+0x8000));return '1:'+btoa(b);
+}
+async function unpack(x){
+  if(x[0]==='0')return JSON.parse(x.slice(2));
+  const b=atob(x.slice(2)),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);
+  return JSON.parse(await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
+}
+const CH=900000;
+const cleanAi=o=>{const r={};for(const k in (o||{})){const a=o[k];if(a&&a.text)r[k]={text:a.text,at:a.at||0,extra:a.extra||''}}return r};
+const isBlank=n=>!n.text&&!Object.keys(n.ai||{}).length&&n.pages.every(p=>!p.strokes.length);
+const dref=(...p)=>CL.fb.doc(CL.db,...p), cref=(...p)=>CL.fb.collection(CL.db,...p);
+
+async function pushPages(n,base){
+  for(let i=0;i<n.pages.length;i++){
+    const pg=n.pages[i],enc=encPage(pg.strokes),sig=sigE(enc);
+    if(pg.csig===sig)continue;
+    if(!enc.length&&pg.csig===undefined){pg.csig=sig;continue}
+    const d=await pack(enc),t=Date.now(),parts=Math.max(1,Math.ceil(d.length/CH));
+    for(let k=0;k<parts;k++)await T(CL.fb.setDoc(dref(...base,'pages','p'+i+'c'+k),{i,k,n:parts,t,d:d.slice(k*CH,(k+1)*CH)}));
+    pg.csig=sig;
+  }
+}
+async function pullPages(base,np){
+  const snap=await T(CL.fb.getDocs(cref(...base,'pages'))),by={};
+  snap.docs.forEach(x=>{const v=x.data();(by[v.i]=by[v.i]||[]).push(v)});
+  const out=[];
+  for(let i=0;i<np;i++){
+    const L=by[i];if(!L){out.push([]);continue}
+    const tm=Math.max(...L.map(v=>v.t)),ch=L.filter(v=>v.t===tm).sort((a,b)=>a.k-b.k);
+    if(ch.length!==ch[0].n)throw new Error('páginas incompletas');
+    out.push(decPage(await unpack(ch.map(v=>v.d).join(''))));
+  }
+  return out;
+}
+async function pushNote(n){
+  if(isBlank(n))return;
+  const base=['users',CL.user.uid,'notes',n.id],u=n.updated;
+  await pushPages(n,base);
+  await T(CL.fb.setDoc(dref(...base),{title:n.title||'',projectId:n.projectId||null,text:n.text||'',ai:cleanAi(n.ai),created:n.created||u,updated:u,np:n.pages.length,bgs:n.pages.map(p=>p.bg||'lines')}));
+  n.synced=u;
+}
+async function pullNote(id,r){
+  const st=await pullPages(['users',CL.user.uid,'notes',id],r.np||0);
+  const n={id,title:r.title,projectId:r.projectId||null,text:r.text||'',ai:r.ai||{},created:r.created,updated:r.updated,synced:r.updated,
+    pages:st.map((x,i)=>({strokes:x,bg:(r.bgs&&r.bgs[i])||'lines',csig:sigE(encPage(x))}))};
+  if(!n.pages.length)n.pages=[{strokes:[],bg:'lines'}];
+  const k=DB.notes.findIndex(x=>x.id===id);if(k>=0)DB.notes[k]=n;else DB.notes.push(n);
+  return n;
+}
+async function delCloudNote(id){
+  const base=['users',CL.user.uid,'notes',id],snap=await T(CL.fb.getDocs(cref(...base,'pages')));
+  for(const d of snap.docs)await T(CL.fb.deleteDoc(dref(...base,'pages',d.id)));
+  await T(CL.fb.deleteDoc(dref(...base)));
+}
+function queueDel(k,id){DB.del=DB.del||[];DB.del.push({k,id});save()}
+
+function afterPull(reload){
+  DB.notes.sort((a,b)=>(b.created||0)-(a.created||0));
+  if(!DB.notes.length){newNote();return}
+  if(!curNote())DB.cur=DB.notes[0].id;
+  localSave();renderLists();
+  if(reload)loadNoteUI();
+}
+function listen(){
+  const U=CL.user.uid,fb=CL.fb,enq=fn=>{CL.q=CL.q.then(fn).catch(e=>console.warn(e))};
+  CL.unsubs.push(fb.onSnapshot(cref('users',U,'projects'),snap=>enq(async()=>{
+    let t=false;const pend=(DB.del||[]);
+    for(const ch of snap.docChanges()){
+      const id=ch.doc.id,l=projOf(id);
+      if(ch.type==='removed'){if(l&&!pend.some(d=>d.id===id)){DB.projects=DB.projects.filter(p=>p.id!==id);DB.notes.forEach(n=>{if(n.projectId===id)n.projectId=null});t=true}continue}
+      const r=ch.doc.data();if(l&&(r.updated||0)<=(l.updated||0))continue;
+      const o={id,name:r.name,ai:r.ai||{},created:r.created,updated:r.updated,synced:r.updated};
+      if(l)Object.assign(l,o);else DB.projects.push(o);t=true;
+    }
+    if(!CL.first.p){CL.first.p=true;const ids=new Set(snap.docs.map(d=>d.id));
+      const gone=DB.projects.filter(p=>p.synced&&!ids.has(p.id));if(gone.length){DB.projects=DB.projects.filter(p=>!gone.includes(p));t=true}}
+    if(t)afterPull(true);CL.schedule(0);
+  })));
+  CL.unsubs.push(fb.onSnapshot(cref('users',U,'notes'),snap=>enq(async()=>{
+    let t=false,cur=false;const pend=(DB.del||[]);
+    for(const ch of snap.docChanges()){
+      const id=ch.doc.id,l=DB.notes.find(x=>x.id===id);
+      if(ch.type==='removed'){if(l&&!pend.some(d=>d.id===id)){DB.notes=DB.notes.filter(x=>x.id!==id);if(DB.cur===id){DB.cur=null;cur=true}t=true}continue}
+      const r=ch.doc.data();if(l&&r.updated<=l.updated)continue;
+      try{await pullNote(id,r);t=true;if(id===DB.cur)cur=true}catch(e){console.warn(e);setSync('Erro a ler: '+e.message,'err')}
+    }
+    if(!CL.first.n){CL.first.n=true;const ids=new Set(snap.docs.map(d=>d.id));
+      const gone=DB.notes.filter(n=>n.synced&&!ids.has(n.id));
+      if(gone.length){DB.notes=DB.notes.filter(n=>!gone.includes(n));t=true}
+      if(DB.notes.some(n=>!isBlank(n))){const b=DB.notes.filter(n=>isBlank(n)&&!n.synced);if(b.length){DB.notes=DB.notes.filter(n=>!b.includes(n));t=true}}
+      if(!curNote())cur=true}
+    if(t)afterPull(cur);CL.schedule(0);
+  })));
+}
+CL.schedule=(ms=2500)=>{clearTimeout(CL.timer);CL.timer=setTimeout(syncNow,ms)};
+async function syncNow(){
+  if(!CL.user||!CL.fb)return;
+  if(!navigator.onLine){setSync('Offline · guardado neste iPad','off');return}
+  if(CL.syncing){CL.again=true;return}
+  CL.syncing=true;setSync('A sincronizar…','busy');
+  try{
+    const U=CL.user.uid;
+    for(const d of [...(DB.del||[])]){
+      if(d.k==='notes')await delCloudNote(d.id);else await T(CL.fb.deleteDoc(dref('users',U,d.k,d.id)));
+      DB.del=DB.del.filter(x=>x!==d);
+    }
+    for(const p of DB.projects){
+      p.updated=p.updated||Date.now();
+      if(p.synced!==p.updated){const u=p.updated;await T(CL.fb.setDoc(dref('users',U,'projects',p.id),{name:p.name,ai:cleanAi(p.ai),created:p.created||u,updated:u}));p.synced=u}
+    }
+    for(const n of DB.notes)if(n.synced!==n.updated)await pushNote(n);
+    localSave();setSync('Sincronizado · '+new Date().toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}),'ok');
+  }catch(e){console.warn(e);setSync('Erro de sincronização ('+(e.code||e.message)+')','err')}
+  CL.syncing=false;if(CL.again){CL.again=false;CL.schedule(1500)}
+}
+async function onUser(u){
+  CL.unsubs.forEach(f=>f());CL.unsubs=[];CL.first={n:false,p:false};CL.user=u;
+  if(!u){setSync('Só neste iPad','');return}
+  if(DB.uid&&DB.uid!==u.uid){
+    if(!confirm('Este iPad tem notas de outra conta. Apagá-las daqui e carregar as desta conta?\n(Cancelar = terminar sessão)')){await CL.fb.signOut(CL.auth);return}
+    DB.notes=[];DB.projects=[];DB.del=[];DB.cur=null;afterPull(true);
+  }
+  DB.uid=u.uid;localSave();setSync('A ligar…','busy');listen();
+}
+function parseCfg(t){
+  const m=t.match(/\{[\s\S]*\}/);if(!m)throw new Error('Configuração inválida');
+  return JSON.parse(m[0].replace(/'/g,'"').replace(/([{,]\s*)([A-Za-z_]\w*)\s*:/g,'$1"$2":').replace(/,\s*}/g,'}'));
+}
+async function fbInit(){
+  if(CL.fb)return true;
+  let cfg=null;try{cfg=JSON.parse(localStorage.getItem('notasia_fb')||'null')}catch(e){}
+  if(!cfg||!cfg.apiKey||!cfg.projectId){setSync('Só neste iPad','');return false}
+  try{
+    let M=window.__FB;
+    if(!M){const [a,b,c]=await Promise.all([import(FBU+'firebase-app.js'),import(FBU+'firebase-auth.js'),import(FBU+'firebase-firestore.js')]);M={...a,...b,...c}}
+    const app=M.initializeApp(cfg);CL.fb=M;CL.auth=M.getAuth(app);CL.db=M.getFirestore(app);
+    M.onAuthStateChanged(CL.auth,onUser);return true;
+  }catch(e){console.warn(e);setSync('Sem ligação ao Firebase','off');return false}
+}
+const AUTH_PT={'auth/invalid-credential':'Email ou palavra-passe errados.','auth/wrong-password':'Email ou palavra-passe errados.','auth/user-not-found':'Conta inexistente — usa "Criar conta".','auth/email-already-in-use':'Esse email já tem conta — usa "Entrar".','auth/weak-password':'Palavra-passe demasiado curta (mín. 6).','auth/invalid-email':'Email inválido.','auth/operation-not-allowed':'Ativa "Email/palavra-passe" em Authentication na consola Firebase.','auth/network-request-failed':'Sem ligação à internet.'};
+async function cloudAuth(mode){
+  try{
+    const t=$('s_fbCfg').value.trim();if(t)localStorage.setItem('notasia_fb',JSON.stringify(parseCfg(t)));
+    if(!await fbInit()){toast('Falta a configuração Firebase (ou sem ligação).',6000);return}
+    if(mode==='out'){await CL.fb.signOut(CL.auth);$('s_acct').textContent='Sem sessão.';toast('Sessão terminada');return}
+    const e=$('s_email').value.trim(),p=$('s_pass').value;
+    if(!e||p.length<6){toast('Indica email e palavra-passe (mín. 6 caracteres).');return}
+    if(mode==='up')await CL.fb.createUserWithEmailAndPassword(CL.auth,e,p);else await CL.fb.signInWithEmailAndPassword(CL.auth,e,p);
+    $('s_pass').value='';closeSettings();toast('Sessão iniciada — a sincronizar.');
+  }catch(err){toast(AUTH_PT[err.code]||('Firebase: '+(err.code||err.message)),7000)}
+}
+addEventListener('online',()=>{if(!CL.fb)fbInit();else CL.schedule(500)});
+addEventListener('offline',()=>{if(CL.user)setSync('Offline · guardado neste iPad','off')});
+
+(async()=>{await load();DB.del=DB.del||[];if(!DB.notes.length)newNote();else{if(!curNote())DB.cur=DB.notes[0].id;loadNoteUI();renderLists()}
+  if(!S.hfKey&&!S.grokKey)setTimeout(()=>toast('Para usar a análise, define as chaves em Definições IA.',6000),600);fbInit()})();
+</script>
+</body>
+</html>
