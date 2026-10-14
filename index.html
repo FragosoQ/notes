@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#e6e2d8">
+<meta name="apple-mobile-web-app-title" content="Ma">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <title>Ma · Notas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -108,6 +114,8 @@ main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative;bac
 .chip{display:flex;align-items:center;gap:6px;border:1px solid var(--hair);border-radius:99px;padding:0 6px 0 12px;height:36px;color:var(--ink2);max-width:230px;background:var(--glass)}
 .chip select{border:0;background:none;padding:0 18px 0 0;appearance:none;-webkit-appearance:none;font-size:13px;width:auto;max-width:170px;cursor:pointer;text-overflow:ellipsis;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%238d887c' stroke-width='1.4'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 2px center}
 .chip select:focus{background-color:transparent}
+.scrim{position:fixed;inset:0;background:rgba(28,27,25,.38);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .3s var(--ease);z-index:29}
+.scrim.on{opacity:1;pointer-events:auto}
 .only-small{display:none!important}
 
 #pages{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;flex:1;overflow:auto;padding:10px 24px 150px;-webkit-overflow-scrolling:touch}
@@ -214,7 +222,7 @@ input#norma:focus{background:none;border-bottom-color:var(--ink)}
 <body>
 <div id="app">
  <aside id="side">
-  <div class="brand"><span class="hanko">間</span><div><b>Ma</b><small>notas com tinta e silêncio</small></div></div>
+  <div class="brand"><span class="hanko">間</span><div><b>Ma</b><small>notas com tinta e silêncio</small></div><button class="ib only-small" style="margin-left:auto" onclick="closeDrawers()" title="Fechar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
   <div class="sec"><span>Projetos</span><button class="ib sm" onclick="newProject()" title="Novo projeto"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></div>
   <div class="list" id="projList"></div>
   <div class="sec"><span>Notas</span><button class="pri pill" onclick="newNote()">Nova nota</button></div>
@@ -311,6 +319,7 @@ input#norma:focus{background:none;border-bottom-color:var(--ink)}
  <div class="mut" style="margin-top:6px;line-height:1.6">As chaves ficam só neste dispositivo e são enviadas apenas ao respetivo fornecedor. Os nomes dos modelos mudam com o tempo — se der erro, confirma-os no site do fornecedor.</div>
  <div class="row"><button onclick="closeSettings()">Cancelar</button><button class="pri" onclick="saveSettings()">Guardar</button></div>
 </div></div>
+<div class="scrim" id="scrim" onclick="closeDrawers()"></div>
 <div id="toast"></div>
 
 <script>
@@ -335,7 +344,9 @@ async function load(){try{const d=await idb();const v=await new Promise(r=>{cons
 function mod(n){(n||curNote()).updated=Date.now();save()}
 let st;function save(){if(CL.user)CL.schedule();clearTimeout(st);st=setTimeout(async()=>{try{const d=await idb();d.transaction('kv','readwrite').objectStore('kv').put(DB,'db')}catch(e){console.warn(e)}},400)}
 function toast(m,ms=3500){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);if(ms)toast.t=setTimeout(()=>t.style.display='none',ms)}
-function toggle(id){$(id).classList.toggle('open')}
+function toggle(id){const e=$(id),o=!e.classList.contains('open');closeDrawers();if(o){e.classList.add('open');$('scrim').classList.add('on')}}
+function closeDrawers(){['side','rightp'].forEach(i=>$(i).classList.remove('open'));$('scrim').classList.remove('on')}
+addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawers()});
 
 /* ============ Projetos & notas ============ */
 const curNote=()=>DB.notes.find(n=>n.id===DB.cur);
@@ -346,7 +357,7 @@ function newNote(){const n={id:uid(),title:'Nota '+new Date().toLocaleDateString
 function newProject(assign){const name=prompt('Nome do projeto:');if(!name)return;const p={id:uid(),name:name.trim(),ai:{},created:Date.now(),updated:Date.now()};DB.projects.push(p);
   if(assign&&curNote()){curNote().projectId=p.id;curNote().updated=Date.now()}save();renderLists();loadNoteUI()}
 function setProject(v){const n=curNote();if(!n)return;if(v==='__new'){newProject(true);return}n.projectId=v||null;mod(n);renderLists();renderAI()}
-function openNote(id){DB.cur=id;$('side').classList.remove('open');loadNoteUI();renderLists();save()}
+function openNote(id){DB.cur=id;closeDrawers();loadNoteUI();renderLists();save()}
 function delNote(id,e){e.stopPropagation();if(!confirm('Apagar esta nota?'))return;{const o=DB.notes.find(n=>n.id===id);if(o&&(o.synced||CL.user))queueDel('notes',id)}DB.notes=DB.notes.filter(n=>n.id!==id);if(DB.cur===id)DB.cur=DB.notes[0]?.id||null;if(!DB.cur)return newNote();save();loadNoteUI();renderLists()}
 function delProject(id,e){e.stopPropagation();if(!confirm('Apagar o projeto? (as notas ficam sem projeto)'))return;{const o=projOf(id);if(o&&(o.synced||CL.user))queueDel('projects',id)}DB.projects=DB.projects.filter(p=>p.id!==id);DB.notes.forEach(n=>{if(n.projectId===id){n.projectId=null;n.updated=Date.now()}});if(DB.filter===id)DB.filter='all';save();renderLists();loadNoteUI()}
 function renderLists(){
@@ -794,10 +805,10 @@ async function fbInit(){
   if(!cfg||!cfg.apiKey||!cfg.projectId){setSync('Só neste iPad','');return false}
   try{
     let M=window.__FB;
-    if(!M){const [a,b,c]=await Promise.all([import(FBU+'firebase-app.js'),import(FBU+'firebase-auth.js'),import(FBU+'firebase-firestore.js')]);M={...a,...b,...c}}
+    if(!M){const q=CL.tries?'?r='+CL.tries:'';const [a,b,c]=await Promise.all([import(FBU+'firebase-app.js'+q),import(FBU+'firebase-auth.js'+q),import(FBU+'firebase-firestore.js'+q)]);M={...a,...b,...c}}
     const app=M.initializeApp(cfg);CL.fb=M;CL.auth=M.getAuth(app);CL.db=M.getFirestore(app);
     M.onAuthStateChanged(CL.auth,onUser);return true;
-  }catch(e){console.warn(e);setSync('Sem ligação ao Firebase','off');return false}
+  }catch(e){console.warn(e);CL.tries=(CL.tries||0)+1;setSync('Offline · guardado neste iPad','off');return false}
 }
 const AUTH_PT={'auth/invalid-credential':'Email ou palavra-passe errados.','auth/wrong-password':'Email ou palavra-passe errados.','auth/user-not-found':'Conta inexistente — usa "Criar conta".','auth/email-already-in-use':'Esse email já tem conta — usa "Entrar".','auth/weak-password':'Palavra-passe demasiado curta (mín. 6).','auth/invalid-email':'Email inválido.','auth/operation-not-allowed':'Ativa "Email/palavra-passe" em Authentication na consola Firebase.','auth/network-request-failed':'Sem ligação à internet.'};
 async function cloudAuth(mode){
@@ -811,9 +822,16 @@ async function cloudAuth(mode){
     $('s_pass').value='';closeSettings();toast('Sessão iniciada — a sincronizar.');
   }catch(err){toast(AUTH_PT[err.code]||('Firebase: '+(err.code||err.message)),7000)}
 }
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(!CL.fb)fbInit();else if(CL.user)CL.schedule(800)}});
 addEventListener('online',()=>{if(!CL.fb)fbInit();else CL.schedule(500)});
 addEventListener('offline',()=>{if(CL.user)setSync('Offline · guardado neste iPad','off')});
 
+/* ============ App instalável (offline) ============ */
+if('serviceWorker' in navigator){
+  const had=!!navigator.serviceWorker.controller;
+  addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(e=>console.warn('SW',e)));
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(had)toast('App atualizada. Fecha e volta a abrir para usar a nova versão.',7000)});
+}
 (async()=>{await load();DB.del=DB.del||[];if(!DB.notes.length)newNote();else{if(!curNote())DB.cur=DB.notes[0].id;loadNoteUI();renderLists()}
   if(!S.hfKey&&!S.grokKey)setTimeout(()=>toast('Para usar a análise, define as chaves em Definições IA.',6000),600);fbInit()})();
 </script>
