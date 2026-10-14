@@ -839,8 +839,11 @@ async function onUser(u){
   DB.uid=u.uid;localSave();setSync('A ligar…','busy');listen();
 }
 function parseCfg(t){
-  const m=t.match(/\{[\s\S]*\}/);if(!m)throw new Error('Configuração inválida');
-  return JSON.parse(m[0].replace(/'/g,'"').replace(/([{,]\s*)([A-Za-z_]\w*)\s*:/g,'$1"$2":').replace(/,\s*}/g,'}'));
+  t=t.replace(/\/\*[\s\S]*?\*\//g,'').replace(/(^|\s)\/\/.*$/gm,'$1');
+  const o={},re=/["'\u201c\u201d\u2018\u2019`]?([A-Za-z_]\w*)["'\u201c\u201d\u2018\u2019`]?\s*:\s*["'\u201c\u201d\u2018\u2019`]([^"'\u201c\u201d\u2018\u2019`]*)["'\u201c\u201d\u2018\u2019`]/g;
+  let m;while((m=re.exec(t)))o[m[1]]=m[2].trim();
+  if(!o.apiKey||!o.projectId)throw new Error('Configuração inválida');
+  return o;
 }
 async function fbInit(){
   if(CL.fb)return true;
