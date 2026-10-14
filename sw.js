@@ -3,7 +3,7 @@
    · Com internet, vai buscar a versão mais recente (rede primeiro, 3,5 s) e guarda-a.
    · Tipos de letra e módulos Firebase ficam guardados depois da 1.ª utilização.
    · Nunca interceta pedidos às IAs nem ao Firestore/Auth (esses são sempre em direto). */
-const V = 'ma-v1';
+const V = 'ma-v2';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
