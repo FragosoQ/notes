@@ -297,12 +297,20 @@ input#norma:focus{background:none;border-bottom-color:var(--ink)}
 <div class="modal" id="mSet"><div class="box">
  <h3>Definições IA</h3>
  <label>Fornecedor principal</label>
- <select id="s_provider"><option value="hf">Hugging Face (tier grátis)</option><option value="grok">Grok (xAI)</option></select>
- <label><input type="checkbox" id="s_fallback"> Se falhar, tentar o outro fornecedor</label>
+ <select id="s_provider"><option value="hf">Hugging Face (tier grátis)</option><option value="mistral">Mistral (tier grátis, UE)</option><option value="groq">Groq (tier grátis, só texto)</option><option value="grok">Grok (xAI)</option></select>
+ <label><input type="checkbox" id="s_fallback"> Se falhar, tentar os outros fornecedores (com chave)</label>
  <label>Token Hugging Face (hf_…, com permissão "Inference Providers")</label>
  <input id="s_hfKey" type="password" placeholder="hf_xxx">
  <label>Modelo de texto (HF)</label><input id="s_hfModel">
  <label>Modelo de visão / manuscrito (HF)</label><input id="s_hfVision">
+ <label>Chave API Groq (console.groq.com → API Keys)</label>
+ <input id="s_groqKey" type="password" placeholder="gsk_xxx">
+ <label>Modelo de texto (Groq)</label><input id="s_groqModel">
+ <label>Modelo de visão (Groq) — deixa vazio se não souberes de nenhum</label><input id="s_groqVision">
+ <label>Chave API Mistral (console.mistral.ai → API Keys)</label>
+ <input id="s_mistralKey" type="password" placeholder="chave Mistral">
+ <label>Modelo de texto (Mistral)</label><input id="s_mistralModel">
+ <label>Modelo de visão / manuscrito (Mistral)</label><input id="s_mistralVision">
  <label>Chave API xAI (Grok)</label>
  <input id="s_grokKey" type="password" placeholder="xai-xxx">
  <label>Modelo de texto (Grok)</label><input id="s_grokModel">
@@ -326,9 +334,9 @@ input#norma:focus{background:none;border-bottom-color:var(--ink)}
 /* ============ Estado & armazenamento (IndexedDB) ============ */
 const PW=1000, PH=1400;
 let DB={projects:[],notes:[],cur:null,filter:'all'};
-let S=JSON.parse(localStorage.getItem('notasia_cfg')||'null')||{
+let S=Object.assign({groqKey:'',groqModel:'llama-3.3-70b-versatile',groqVision:'',mistralKey:'',mistralModel:'mistral-small-latest',mistralVision:'mistral-medium-latest'},JSON.parse(localStorage.getItem('notasia_cfg')||'null')||{
   provider:'hf',fallback:true,hfKey:'',hfModel:'Qwen/Qwen2.5-72B-Instruct',hfVision:'Qwen/Qwen2.5-VL-72B-Instruct',
-  grokKey:'',grokModel:'grok-4',grokVision:'grok-4',auto:true,penonly:true};
+  grokKey:'',grokModel:'grok-4',grokVision:'grok-4',auto:true,penonly:true});
 let tool='pen',color='#1c1b19',W=3;
 let CL={fb:null,db:null,auth:null,user:null,unsubs:[],syncing:false,again:false,timer:0,first:{n:false,p:false},q:Promise.resolve(),schedule(){}};
 const COLORS=['#1c1b19','#264a6b','#c8442f','#4f6f52','#b9892f','#6b4a7a'];
@@ -529,17 +537,23 @@ function pageToJpeg(pg){const d0=DARK;DARK=false;
 }
 
 /* ============ IA ============ */
-function cfg(p){return p==='hf'?{url:'https://router.huggingface.co/v1/chat/completions',key:S.hfKey,text:S.hfModel,vision:S.hfVision,name:'Hugging Face'}
-  :{url:'https://api.x.ai/v1/chat/completions',key:S.grokKey,text:S.grokModel,vision:S.grokVision,name:'Grok'}}
+function cfg(p){
+  if(p==='hf')return{url:'https://router.huggingface.co/v1/chat/completions',key:S.hfKey,text:S.hfModel,vision:S.hfVision,name:'Hugging Face'};
+  if(p==='groq')return{url:'https://api.groq.com/openai/v1/chat/completions',key:S.groqKey,text:S.groqModel,vision:S.groqVision,name:'Groq'};
+  if(p==='mistral')return{url:'https://api.mistral.ai/v1/chat/completions',key:S.mistralKey,text:S.mistralModel,vision:S.mistralVision,name:'Mistral'};
+  return{url:'https://api.x.ai/v1/chat/completions',key:S.grokKey,text:S.grokModel,vision:S.grokVision,name:'Grok'};
+}
 async function chatWith(p,messages,vision){
   const c=cfg(p);if(!c.key)throw new Error('Falta a chave de '+c.name+' (Definições).');
+  if(vision&&!c.vision)throw new Error(c.name+' não tem modelo de visão configurado — usa outro fornecedor para ler o manuscrito.');
   const r=await fetch(c.url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+c.key},
     body:JSON.stringify({model:vision?c.vision:c.text,messages,temperature:.3,max_tokens:2500})});
   if(!r.ok){let t='';try{t=(await r.json()).error?.message||''}catch(e){}throw new Error(c.name+' '+r.status+': '+(t||r.statusText))}
   const j=await r.json();return j.choices?.[0]?.message?.content?.trim()||''
 }
 async function chat(messages,vision=false){
-  const order=[S.provider];if(S.fallback)order.push(S.provider==='hf'?'grok':'hf');
+  let order=[S.provider];if(S.fallback)order.push(...['hf','mistral','groq','grok'].filter(p=>p!==S.provider&&cfg(p).key));
+  if(vision){const v=order.filter(p=>cfg(p).vision);if(v.length)order=v}
   let last;for(const p of order){try{return await chatWith(p,messages,vision)}catch(e){last=e;console.warn(e)}}
   throw last;
 }
@@ -647,7 +661,7 @@ function exportMd(){
   Object.keys(PROMPTS).forEach(k=>{if(n.ai?.[k]?.text)s+=`\n## ${PROMPTS[k][0]}\n${n.ai[k].text}\n`});
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([s],{type:'text/markdown'}));a.download=(n.title||'nota').replace(/[^\w-]+/g,'_')+'.md';a.click();
 }
-const FIELDS={provider:'s_provider',hfKey:'s_hfKey',hfModel:'s_hfModel',hfVision:'s_hfVision',grokKey:'s_grokKey',grokModel:'s_grokModel',grokVision:'s_grokVision'};
+const FIELDS={provider:'s_provider',hfKey:'s_hfKey',hfModel:'s_hfModel',hfVision:'s_hfVision',groqKey:'s_groqKey',groqModel:'s_groqModel',groqVision:'s_groqVision',mistralKey:'s_mistralKey',mistralModel:'s_mistralModel',mistralVision:'s_mistralVision',grokKey:'s_grokKey',grokModel:'s_grokModel',grokVision:'s_grokVision'};
 function openSettings(){{const c=localStorage.getItem('notasia_fb');$('s_fbCfg').value=c?JSON.stringify(JSON.parse(c),null,1):'';$('s_email').value=CL.user?.email||$('s_email').value;$('s_acct').textContent=CL.user?('Sessão iniciada: '+CL.user.email):'Sem sessão.'}
   for(const k in FIELDS)$(FIELDS[k]).value=S[k]||'';$('s_fallback').checked=!!S.fallback;$('s_auto').checked=!!S.auto;$('s_penonly').checked=!!S.penonly;$('mSet').classList.add('on')}
 function closeSettings(){$('mSet').classList.remove('on')}
@@ -833,7 +847,7 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(had)toast('App atualizada. Fecha e volta a abrir para usar a nova versão.',7000)});
 }
 (async()=>{await load();DB.del=DB.del||[];if(!DB.notes.length)newNote();else{if(!curNote())DB.cur=DB.notes[0].id;loadNoteUI();renderLists()}
-  if(!S.hfKey&&!S.grokKey)setTimeout(()=>toast('Para usar a análise, define as chaves em Definições IA.',6000),600);fbInit()})();
+  if(!S.hfKey&&!S.grokKey&&!S.mistralKey&&!S.groqKey)setTimeout(()=>toast('Para usar a análise, define as chaves em Definições IA.',6000),600);fbInit()})();
 </script>
 </body>
 </html>
